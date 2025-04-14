@@ -1,24 +1,7 @@
 const villagers = ['Abigail', 'Sebastian', 'Leah', 'Elliott'];
-const items = ['Amethyst', 'Beer', 'Salad', 'Lobster'];
+const items = [/* optional item autocomplete source */];
 
-const preferences = {
-  'Abigail': {
-    'Amethyst': 'Loved',
-    'Beer': 'Disliked',
-  },
-  'Sebastian': {
-    'Beer': 'Liked',
-    'Lobster': 'Disliked',
-  },
-  'Leah': {
-    'Salad': 'Loved',
-    'Beer': 'Disliked',
-  },
-  'Elliott': {
-    'Lobster': 'Loved',
-    'Salad': 'Neutral',
-  }
-};
+let currentPreferences = {};
 
 function setupSearch(inputId, suggestionsId, dataList, onSelect) {
   const input = document.getElementById(inputId);
@@ -44,13 +27,26 @@ function setupSearch(inputId, suggestionsId, dataList, onSelect) {
   });
 }
 
+async function loadVillagerData(villager) {
+  try {
+    const response = await fetch(`data/${villager}.json`);
+    if (!response.ok) throw new Error("Villager data not found.");
+    currentPreferences = await response.json();
+    updateResult();
+  } catch (err) {
+    console.error("Error loading villager data:", err);
+    currentPreferences = {};
+    document.getElementById('result').textContent = "Could not load villager data.";
+  }
+}
+
 function updateResult() {
   const villager = document.getElementById('villagerInput').value;
   const item = document.getElementById('itemInput').value;
   const result = document.getElementById('result');
 
   if (villager && item) {
-    const pref = preferences[villager]?.[item];
+    const pref = currentPreferences[item];
     if (pref) {
       result.textContent = `${villager} ${pref.toLowerCase()} ${item}!`;
     } else {
@@ -61,5 +57,9 @@ function updateResult() {
   }
 }
 
-setupSearch('villagerInput', 'villagerSuggestions', villagers, updateResult);
+setupSearch('villagerInput', 'villagerSuggestions', villagers, () => {
+  const villager = document.getElementById('villagerInput').value;
+  loadVillagerData(villager);
+});
+
 setupSearch('itemInput', 'itemSuggestions', items, updateResult);
